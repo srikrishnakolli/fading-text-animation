@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'dart:math';
 
 void main() {
   runApp(MyApp());
@@ -24,24 +23,26 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: _isDarkMode ? ThemeData.dark() : ThemeData.light(),
-      home: FadingTextAnimation(toggleTheme: toggleTheme),
+      home: BouncingTextAnimation(toggleTheme: toggleTheme),
     );
   }
 }
 
-class FadingTextAnimation extends StatefulWidget {
+class BouncingTextAnimation extends StatefulWidget {
   final VoidCallback toggleTheme;
 
-  FadingTextAnimation({required this.toggleTheme});
+  BouncingTextAnimation({required this.toggleTheme});
 
   @override
-  _FadingTextAnimationState createState() => _FadingTextAnimationState();
+  _BouncingTextAnimationState createState() => _BouncingTextAnimationState();
 }
 
-class _FadingTextAnimationState extends State<FadingTextAnimation> with SingleTickerProviderStateMixin {
+class _BouncingTextAnimationState extends State<BouncingTextAnimation> with SingleTickerProviderStateMixin {
   bool _isVisible = true;
   Color _textColor = Colors.blue;
+  double _textSize = 24.0;
   late AnimationController _controller;
+  late Animation<double> _animation;
 
   @override
   void initState() {
@@ -49,21 +50,18 @@ class _FadingTextAnimationState extends State<FadingTextAnimation> with SingleTi
     _controller = AnimationController(
       duration: Duration(seconds: 1),
       vsync: this,
-    );
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: 0, end: 15).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.bounceInOut,
+    ));
   }
 
   void toggleVisibility() {
     setState(() {
       _isVisible = !_isVisible;
-      _isVisible ? _controller.reverse() : _controller.forward();
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_isVisible ? "Text is Visible" : "Text is Hidden"),
-        duration: Duration(seconds: 1),
-      ),
-    );
   }
 
   void pickColor() {
@@ -99,34 +97,52 @@ class _FadingTextAnimationState extends State<FadingTextAnimation> with SingleTi
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Rotating Animation'),
+        title: Text('Bouncing Animation'),
         actions: [
-          IconButton(
-            icon: Icon(Icons.color_lens),
-            onPressed: pickColor,
-          ),
-          IconButton(
-            icon: Icon(Icons.brightness_6),
-            onPressed: widget.toggleTheme,
-          ),
+          IconButton(icon: Icon(Icons.color_lens), onPressed: pickColor),
+          IconButton(icon: Icon(Icons.brightness_6), onPressed: widget.toggleTheme),
         ],
       ),
       body: Center(
-        child: AnimatedOpacity(
-          opacity: _isVisible ? 1.0 : 0.0,
-          duration: Duration(seconds: 1),
-          child: RotationTransition(
-            turns: _controller.drive(Tween(begin: 0.0, end: 1.0)),
-            child: Text(
-              'Rotating Text!',
-              style: TextStyle(fontSize: 28, color: _textColor, fontWeight: FontWeight.bold),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedOpacity(
+              opacity: _isVisible ? 1.0 : 0.0,
+              duration: Duration(seconds: 1),
+              child: AnimatedBuilder(
+                animation: _animation,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(0, _animation.value),
+                    child: Text(
+                      'Bouncing Text!',
+                      style: TextStyle(fontSize: _textSize, color: _textColor, fontWeight: FontWeight.bold),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
+            SizedBox(height: 20),
+            Slider(
+              value: _textSize,
+              min: 16,
+              max: 48,
+              divisions: 10,
+              label: _textSize.round().toString(),
+              onChanged: (value) {
+                setState(() {
+                  _textSize = value;
+                });
+              },
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: toggleVisibility,
+              child: Text("Toggle Animation"),
+            ),
+          ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: toggleVisibility,
-        child: Icon(Icons.play_arrow),
       ),
     );
   }
