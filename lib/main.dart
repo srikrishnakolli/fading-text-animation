@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'dart:math';
 
 void main() {
   runApp(MyApp());
@@ -37,15 +38,32 @@ class FadingTextAnimation extends StatefulWidget {
   _FadingTextAnimationState createState() => _FadingTextAnimationState();
 }
 
-class _FadingTextAnimationState extends State<FadingTextAnimation> {
+class _FadingTextAnimationState extends State<FadingTextAnimation> with SingleTickerProviderStateMixin {
   bool _isVisible = true;
   Color _textColor = Colors.blue;
-  bool _showFrame = false;
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: Duration(seconds: 1),
+      vsync: this,
+    );
+  }
 
   void toggleVisibility() {
     setState(() {
       _isVisible = !_isVisible;
+      _isVisible ? _controller.reverse() : _controller.forward();
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_isVisible ? "Text is Visible" : "Text is Hidden"),
+        duration: Duration(seconds: 1),
+      ),
+    );
   }
 
   void pickColor() {
@@ -81,7 +99,7 @@ class _FadingTextAnimationState extends State<FadingTextAnimation> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Fading Text Animation'),
+        title: Text('Rotating Animation'),
         actions: [
           IconButton(
             icon: Icon(Icons.color_lens),
@@ -93,98 +111,22 @@ class _FadingTextAnimationState extends State<FadingTextAnimation> {
           ),
         ],
       ),
-      body: GestureDetector(
-        onTap: toggleVisibility,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedOpacity(
-                opacity: _isVisible ? 1.0 : 0.0,
-                duration: Duration(seconds: 1),
-                curve: Curves.easeInOut,
-                child: Text(
-                  'Hello, Flutter!',
-                  style: TextStyle(fontSize: 24, color: _textColor),
-                ),
-              ),
-              SizedBox(height: 20),
-              SwitchListTile(
-                title: Text('Show Frame Around Image'),
-                value: _showFrame,
-                onChanged: (value) {
-                  setState(() {
-                    _showFrame = value;
-                  });
-                },
-              ),
-              Container(
-                decoration: _showFrame
-                    ? BoxDecoration(
-                        border: Border.all(color: Colors.blue, width: 3),
-                        borderRadius: BorderRadius.circular(10),
-                      )
-                    : null,
-                child: Image.network(
-                  'https://flutter.dev/images/flutter-logo-sharing.png',
-                  width: 100,
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                child: Text("Go to Second Animation"),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SecondAnimationScreen(),
-                    ),
-                  );
-                },
-              ),
-            ],
+      body: Center(
+        child: AnimatedOpacity(
+          opacity: _isVisible ? 1.0 : 0.0,
+          duration: Duration(seconds: 1),
+          child: RotationTransition(
+            turns: _controller.drive(Tween(begin: 0.0, end: 1.0)),
+            child: Text(
+              'Rotating Text!',
+              style: TextStyle(fontSize: 28, color: _textColor, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: toggleVisibility,
         child: Icon(Icons.play_arrow),
-      ),
-    );
-  }
-}
-
-class SecondAnimationScreen extends StatefulWidget {
-  @override
-  _SecondAnimationScreenState createState() => _SecondAnimationScreenState();
-}
-
-class _SecondAnimationScreenState extends State<SecondAnimationScreen> {
-  bool _isVisible = true;
-
-  void toggleVisibility() {
-    setState(() {
-      _isVisible = !_isVisible;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Second Animation')),
-      body: Center(
-        child: GestureDetector(
-          onTap: toggleVisibility,
-          child: AnimatedOpacity(
-            opacity: _isVisible ? 1.0 : 0.0,
-            duration: Duration(seconds: 2),
-            curve: Curves.bounceInOut,
-            child: Text(
-              'Flutter Animations!',
-              style: TextStyle(fontSize: 24, color: Colors.red),
-            ),
-          ),
-        ),
       ),
     );
   }
